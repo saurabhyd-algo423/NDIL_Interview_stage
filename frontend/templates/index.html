@@ -1,0 +1,202 @@
+<!-- index.html — Main candidate-facing interview page template (Jinja2): loads Azure Speech SDK, injects backend config (CFG) for interview.js, and renders the avatar video + chat/transcript UI. -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>NDIL - Interviewer</title>
+
+  <!-- Azure Speech SDK -->
+  <script>
+    function onSdkLoad() { window._sdkReady = true; }
+    function loadSdkFallback() {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js';
+      s.onload = onSdkLoad;
+      s.onerror = () => {
+        document.body.insertAdjacentHTML('afterbegin',
+          '<div style="position:fixed;inset:0;background:#ef4444;color:#fff;display:flex;' +
+          'align-items:center;justify-content:center;font:700 1.1rem sans-serif;z-index:9999;' +
+          'padding:20px;text-align:center">' +
+          '⚠ Azure Speech SDK failed to load. Disable ad-blocker and refresh.</div>');
+      };
+      document.head.appendChild(s);
+    }
+  </script>
+  <script
+    src="https://unpkg.com/microsoft-cognitiveservices-speech-sdk/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"
+    onload="onSdkLoad()" onerror="loadSdkFallback()">
+  </script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/interview.css" />
+</head>
+
+<body>
+
+  <!-- Avatar panel -->
+  <div id="avatar-bg" class="fullwidth">
+    <div id="avatar-placeholder">
+      <svg width="80" height="80" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+      <p>Avatar will appear here<br>after you start the interview</p>
+    </div>
+    <video id="avatar-video" autoplay playsinline></video>
+  </div>
+
+  <!-- Candidate camera PIP (shown during interview) -->
+  <div id="candidate-pip">
+    <video id="cam-video" autoplay playsinline muted></video>
+    <div id="pip-cam-dot"></div>
+    <div id="pip-label">You</div>
+  </div>
+
+  <!-- Recording badge -->
+  <div id="rec-badge">
+    <div id="rec-dot"></div>
+    <span>REC</span>
+  </div>
+
+  <!-- Off-screen canvas used to composite avatar+candidate for recording -->
+  <canvas id="rec-canvas" width="1280" height="720"></canvas>
+
+  <div id="topbar">
+    <h1>🎙 NDIL - Interviewer</h1>
+    <span id="status-badge">Not started</span>
+  </div>
+  <div id="timer">30:00</div>
+
+  <div id="phase-bar">
+    <div id="phase-name">GREETING</div>
+    <div id="phase-progress">
+      <div id="phase-fill"></div>
+    </div>
+  </div>
+
+  <div id="mic-pill">
+    <div id="mic-dot"></div>
+    <span id="mic-status-txt"></span>
+    <span id="partial-txt"></span>
+  </div>
+
+  <div id="overlay">
+    <div class="spinner"></div>
+    <span id="overlay-msg">Connecting…</span>
+  </div>
+
+  <!-- Subtitles -->
+  <div id="subtitle-container"></div>
+
+  <!-- Floating End Interview button (shown during interview) -->
+  <button id="end-interview-btn" onclick="endInterview()">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+    End Interview
+  </button>
+
+  <!-- ════════════════════════════════════════════════════════════════
+     SETUP SCREEN
+     ════════════════════════════════════════════════════════════════ -->
+  <div id="setup-screen">
+    <div id="setup-container">
+      <div id="setup-card">
+        <h2>NDIL - Interviewer</h2>
+        <p class="hint">
+          Enter your Candidate ID from the Mail. 
+        </p>
+
+        <!-- Camera preview on setup screen -->
+        <div id="setup-cam-wrap">
+          <video id="setup-cam-video" autoplay playsinline muted></video>
+          <div id="setup-cam-placeholder">
+            <svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M23 7l-7 5 7 5V7z" />
+              <rect x="1" y="5" width="15" height="14" rx="2" />
+            </svg>
+            <span>Camera preview</span>
+          </div>
+          <div id="setup-cam-status">
+            <div id="setup-cam-live-dot"></div>
+            <span>LIVE</span>
+          </div>
+        </div>
+
+        <!-- Camera on/off toggle on setup screen -->
+        <button id="setup-cam-btn" onclick="toggleSetupCamera()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M23 7l-7 5 7 5V7z" />
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+          </svg>
+          <span id="setup-cam-btn-txt">Enable Camera</span>
+        </button>
+
+        <!-- Microphone on/off toggle on setup screen -->
+        <button id="setup-mic-btn" onclick="toggleSetupMic()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="9" y="2" width="6" height="11" rx="3" />
+            <path d="M5 10a7 7 0 0 0 14 0M12 19v3M8 22h8" />
+          </svg>
+          <span id="setup-mic-btn-txt">Enable Microphone</span>
+        </button>
+
+        <!-- Mic active indicator -->
+        <div id="setup-mic-indicator">
+          <div id="setup-mic-wave">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <span>Microphone active — audio detected</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="resume-id-input">Resume ID</label>
+          <input id="resume-id-input" class="id-input" type="text"
+            placeholder="e.g. Aashay_Vaidya_f6b8b2e8-3b31-4879-99a8-5d3b7248bf84" autocomplete="off" spellcheck="false" />
+        </div>
+
+        <div id="setup-error" class="setup-error" style="display:none;"></div>
+        <button id="start-btn" class="btn-primary" onclick="startInterview()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <polygon points="5,3 19,12 5,21" />
+          </svg>
+          Join &amp; Start Interview
+        </button>
+      </div>
+
+      <!-- Guidelines Card (can be edited later) -->
+      <div id="guidelines-card">
+        <h3>Interview Guidelines</h3>
+        <ul class="guidelines-list">
+          <li><strong>Check your setup:</strong> Ensure your camera and microphone are working properly before starting.</li>
+          <li><strong>Find a quiet place:</strong> Minimize background noise and distractions to ensure a smooth conversation.</li>
+          <li><strong>Speak clearly:</strong> The AI needs to hear your answers clearly to evaluate them accurately.</li>
+          <li><strong>Pacing:</strong> Allow the AI to finish its questions. You can interrupt if needed, but it's best to wait until it finishes speaking.</li>
+          <li><strong>Time management:</strong> Keep an eye on the timer at the top left. The interview will automatically conclude when time is up.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    Flask/Jinja2 config — must stay inline because it contains template variables.
+    This block MUST be loaded before interview.js.
+  -->
+  <script>
+    const CFG = {
+      avatarCharacter: "{{ avatar_character }}",
+      avatarStyle: "{{ avatar_style }}",
+      ttsVoice: "{{ tts_voice }}",
+      speechRegion: "{{ speech_region }}"
+    };
+  </script>
+
+  <!-- Main interview logic -->
+  <script src="/static/interview.js"></script>
+
+</body>
+
+</html>

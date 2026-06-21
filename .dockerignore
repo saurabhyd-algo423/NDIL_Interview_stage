@@ -1,0 +1,32 @@
+# .dockerignore — Excludes venvs, caches, secrets (.env), IDE files, and git metadata from the Docker build context.
+# Virtual environment
+venv/
+env/
+.env
+.env.*
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Logs and local databases
+*.log
+*.sqlite3
+
+# Git
+.git/
+.gitignore

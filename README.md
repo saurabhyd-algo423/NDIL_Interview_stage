@@ -136,35 +136,31 @@ pip install -r requirements.txt
 Create a `.env` file in the root directory with the following variables:
 
 ```env
-# Azure Speech Services
-SPEECH_KEY=your-speech-api-key
-SPEECH_REGION=your-speech-region
-
 # Azure Cosmos DB
-COSMOS_ENDPOINT=your-cosmos-db-endpoint
-COSMOS_DATABASE=your-database-name
-COSMOS_USERS_CONTAINER=users
+COSMOS_ENDPOINT=your-cosmos-endpoint
+COSMOS_KEY=your-cosmos-key
+COSMOS_DATABASE_NAME=aibasedrecruitment
+COSMOS_CONTAINER=users
 COSMOS_RESUME_CONTAINER=resumes
-COSMOS_JD_CONTAINER=job_descriptions
+COSMOS_JD_CONTAINER=jobdescriptions
 
-# Azure Blob Storage
-BLOB_CONNECTION_STRING=your-blob-connection-string
-BLOB_CONTAINER_NAME=interview-data
+# Azure BLOB
+AZURE_BLOB_CONNECTION_STRING=your-blob-connection-string
+AZURE_INTERVIEW_CONTAINER=interview-files
+COSMOS_EVALUATIONS_CONTAINER=evaluations
+
+# Default Avatar Configuration
+AVATAR_CHARACTER=lisa
+AVATAR_STYLE=casual-sitting
+TTS_VOICE=en-US-JennyMultilingualNeural
+SPEECH_REGION=your-speech-region
+SPEECH_KEY=your-speech-api-key
 
 # Azure OpenAI
-AZURE_OAI_KEY=your-azure-openai-key
-AZURE_OAI_ENDPOINT=your-azure-openai-endpoint
-AZURE_OAI_DEPLOYMENT=your-deployment-name
-
-# OpenAI (Alternative)
-OPENAI_API_KEY=your-openai-api-key
-
-# Flask
-FLASK_SECRET=your-random-secret-key
-
-# Optional: Interview Configuration
-SEMANTIC_VAD_MIN_WORDS=3
-INTERVIEW_TIMEOUT=3600
+AZURE_OPENAI_CHAT_ENDPOINT=your-openai-chat-endpoint
+AZURE_OPENAI_CHAT_KEY=your-openai-chat-key
+AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-4o-mini
+AZURE_OPENAI_CHAT_API_VERSION=2024-12-01-preview
 ```
 
 ## ⚙️ Configuration

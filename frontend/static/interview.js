@@ -1600,8 +1600,12 @@ async function startInterview() {
 
   if (!resumeId) { showSetupError('Please enter a Candidate ID.'); $('resume-id-input').focus(); return; }
   if (!uuidRe.test(resumeId)) {
-    showSetupError('Invalid Candidate ID.\nMust contain a UUID.\nVisit /api/debug/resumes to see real IDs.');
+    showSetupError('Invalid Candidate ID.\nEnter Candidate ID from the Mail.');
     $('resume-id-input').focus(); return;
+  }
+  if (!camOn || !micOn) {
+  showSetupError('Please turn on your camera and microphone to join the interview.');
+  return;
   }
 
   $('start-btn').disabled = true;

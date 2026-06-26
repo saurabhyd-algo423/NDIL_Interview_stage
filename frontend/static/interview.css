@@ -793,8 +793,8 @@ body {
   padding: 9px 12px;
   border-radius: 8px;
   background: #fef2f2;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  color: #1a1a1a;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
   font-size: .82rem;
   line-height: 1.5;
 }
